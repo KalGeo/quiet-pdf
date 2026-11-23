@@ -4,16 +4,27 @@ package io.github.kalgeo.quietpdf
 
 import android.graphics.RectF
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -30,13 +41,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -59,12 +71,16 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.min
@@ -86,7 +102,7 @@ private val NightFilter = ColorFilter.colorMatrix(
     )
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ReaderScreen(
     reader: Screen.Reader,
@@ -115,8 +131,70 @@ fun ReaderScreen(
     BackHandler(onBack = onBack)
     BackHandler(enabled = search.active, onBack = search::close)
 
-    Scaffold(
-        topBar = {
+    // The bars (ours and the system's) are shown when a document opens, go away as soon as the
+    // user starts reading, and come back with a tap. Search keeps them up: it lives in the bar.
+    var barsWanted by remember { mutableStateOf(true) }
+    val barsVisible = barsWanted || search.active
+    ImmersiveMode(enabled = !barsVisible)
+
+    // With the bars hidden, the page number still shows briefly whenever the page changes.
+    var pageJustChanged by remember { mutableStateOf(false) }
+    LaunchedEffect(currentPage) {
+        pageJustChanged = true
+        delay(1500)
+        pageJustChanged = false
+    }
+
+    // The pages fill the whole window and the bars are drawn over them, so showing or hiding
+    // the bars never moves or re-renders the page. The list is padded by the bars' full size
+    // (whether or not they are showing) so the first page starts below them.
+    val systemBars = WindowInsets.systemBarsIgnoringVisibility.asPaddingValues()
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(if (nightMode) Color(0xFF0E0E0E) else Color(0xFFE3E3E3))
+    ) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .clipToBounds()
+                .onSizeChanged { zoom.updateViewport(it) }
+                .zoomGestures(
+                    zoom = zoom,
+                    scope = scope,
+                    onTap = { if (!search.active) barsWanted = !barsWanted },
+                    onMove = { if (!search.active) barsWanted = false },
+                )
+        ) {
+            LazyColumn(
+                state = listState,
+                userScrollEnabled = false, // all gestures go through zoomGestures
+                contentPadding = PaddingValues(
+                    top = systemBars.calculateTopPadding() + TopAppBarDefaults.TopAppBarExpandedHeight + 8.dp,
+                    bottom = systemBars.calculateBottomPadding() + 8.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        scaleX = zoom.scale
+                        scaleY = zoom.scale
+                        translationX = zoom.offsetX
+                        translationY = zoom.offsetY
+                    },
+            ) {
+                items(doc.pageCount, key = { it }) { index -> PageView(doc, index, zoom, search, nightMode) }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = barsVisible,
+            enter = slideInVertically { -it } + fadeIn(),
+            exit = slideOutVertically { -it } + fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
             if (search.active) SearchTopBar(
                 search = search,
                 onSearch = { search.run(scope, currentPage, reveal) },
@@ -143,43 +221,22 @@ fun ReaderScreen(
                     }
                 },
             )
-        },
-    ) { padding ->
-        Box(
-            Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .background(if (nightMode) Color(0xFF0E0E0E) else Color(0xFFE3E3E3))
-                .clipToBounds()
-                .onSizeChanged { zoom.updateViewport(it) }
-                .zoomGestures(zoom, scope)
-        ) {
-            LazyColumn(
-                state = listState,
-                userScrollEnabled = false, // all gestures go through zoomGestures
-                contentPadding = PaddingValues(vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        transformOrigin = TransformOrigin(0f, 0f)
-                        scaleX = zoom.scale
-                        scaleY = zoom.scale
-                        translationX = zoom.offsetX
-                        translationY = zoom.offsetY
-                    },
-            ) {
-                items(doc.pageCount, key = { it }) { index -> PageView(doc, index, zoom, search, nightMode) }
-            }
+        }
 
+        AnimatedVisibility(
+            visible = barsVisible || pageJustChanged,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp),
+        ) {
             Surface(
                 onClick = { showGoTo = true },
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.85f),
                 contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp),
             ) {
                 Text(
                     stringResource(R.string.page_indicator, currentPage + 1, doc.pageCount),
@@ -200,6 +257,26 @@ fun ReaderScreen(
                 scope.launch { zoom.jumpTo(page) }
             },
         )
+    }
+}
+
+/** Hides the status and navigation bars while [enabled]; a swipe from the edge peeks at them. */
+@Composable
+private fun ImmersiveMode(enabled: Boolean) {
+    val window = LocalActivity.current?.window ?: return
+    val view = LocalView.current
+    val controller = remember(window, view) {
+        WindowCompat.getInsetsController(window, view).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+    LaunchedEffect(controller, enabled) {
+        val bars = WindowInsetsCompat.Type.systemBars()
+        if (enabled) controller.hide(bars) else controller.show(bars)
+    }
+    // Leaving the reader always brings the system bars back.
+    DisposableEffect(controller) {
+        onDispose { controller.show(WindowInsetsCompat.Type.systemBars()) }
     }
 }
 

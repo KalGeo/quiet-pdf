@@ -62,6 +62,12 @@ class ZoomState(val list: LazyListState) {
     private val minX get() = -(scale - 1f) * viewport.width
     private val minY get() = -(scale - 1f) * viewport.height
 
+    /**
+     * The list's top content padding. Item offsets reported by the list start after it, so it
+     * has to be added to get an item's position inside the viewport.
+     */
+    private val padTop get() = list.layoutInfo.beforeContentPadding
+
     /** How sharp pages should be rendered (1x, 2x or 3x the screen width). */
     val renderLevel: Int
         get() = when {
@@ -118,7 +124,7 @@ class ZoomState(val list: LazyListState) {
     fun isListRangeVisible(start: Int, end: Int): Boolean {
         val top = -offsetY / scale
         val bottom = (viewport.height - offsetY) / scale
-        return start < bottom && end > top
+        return start + padTop < bottom && end + padTop > top
     }
 
     /** The page under the middle of the screen (the last one once the end is reached). */
@@ -127,7 +133,7 @@ class ZoomState(val list: LazyListState) {
         if (items.isEmpty()) return list.firstVisibleItemIndex
         if (!list.canScrollForward && offsetY <= minY + 1f) return pageCount - 1
         val middle = (viewport.height / 2f - offsetY) / scale
-        return items.lastOrNull { it.offset <= middle }?.index ?: items.first().index
+        return items.lastOrNull { it.offset + padTop <= middle }?.index ?: items.first().index
     }
 
     suspend fun jumpTo(page: Int) {
@@ -144,7 +150,7 @@ class ZoomState(val list: LazyListState) {
         stop()
         offsetY = 0f
         offsetX = (viewport.width / 2f - x * scale).coerceIn(minX, 0f)
-        list.scrollToItem(page, (y - viewport.height / (3f * scale)).roundToInt().coerceAtLeast(0))
+        list.scrollToItem(page, (y + padTop - viewport.height / (3f * scale)).roundToInt().coerceAtLeast(0))
     }
 
     /** Runs [block] as the single running animation, replacing any previous one. */
@@ -189,13 +195,24 @@ class ZoomState(val list: LazyListState) {
     }
 }
 
-/** One-finger pan with fling, two-finger pinch zoom, double tap to zoom in/out. */
-fun Modifier.zoomGestures(zoom: ZoomState, scope: CoroutineScope): Modifier = this
+/**
+ * One-finger pan with fling, two-finger pinch zoom, double tap to zoom in/out.
+ * [onTap] is a single tap; [onMove] fires once per gesture when a pan or pinch starts.
+ */
+fun Modifier.zoomGestures(
+    zoom: ZoomState,
+    scope: CoroutineScope,
+    onTap: () -> Unit,
+    onMove: () -> Unit,
+): Modifier = this
     .pointerInput(zoom) {
-        detectTapGestures(onDoubleTap = { position ->
-            val target = if (zoom.scale > 1.05f) 1f else DOUBLE_TAP_SCALE
-            zoom.launch(scope) { zoom.animateZoomTo(target, position) }
-        })
+        detectTapGestures(
+            onTap = { onTap() },
+            onDoubleTap = { position ->
+                val target = if (zoom.scale > 1.05f) 1f else DOUBLE_TAP_SCALE
+                zoom.launch(scope) { zoom.animateZoomTo(target, position) }
+            },
+        )
     }
     .pointerInput(zoom) {
         val decay = splineBasedDecay<Float>(this)
@@ -227,6 +244,7 @@ fun Modifier.zoomGestures(zoom: ZoomState, scope: CoroutineScope): Modifier = th
                     panSoFar += pan
                     val zoomMotion = abs(1f - zoomSoFar) * event.calculateCentroidSize(useCurrent = false)
                     pastSlop = zoomMotion > slop || panSoFar.getDistance() > slop
+                    if (pastSlop) onMove()
                 }
                 if (pastSlop) {
                     if (zoomChange != 1f) zoom.zoomBy(zoomChange, event.calculateCentroid(useCurrent = false))

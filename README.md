@@ -8,6 +8,7 @@ anything anywhere.
 ## Features
 
 - Continuous vertical scrolling with pinch and double-tap zoom; pages are re-rendered sharper when you zoom in
+- Full-screen reading: the bars hide as soon as you scroll and come back with a tap
 - Text search with highlighted results (Android 15 and newer)
 - Night mode
 - Go to page, by number or with a slider
