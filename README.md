@@ -5,6 +5,20 @@ A small PDF reader for Android that just opens your PDFs.
 No ads, no tracking, no accounts. The app has no internet permission, so it cannot send
 anything anywhere.
 
+<p>
+  <img src="docs/screenshots/2-reader.png" width="19%" alt="A PDF open, with the title bar showing">
+  <img src="docs/screenshots/3-fullscreen.png" width="19%" alt="Reading in full screen, with no bars">
+  <img src="docs/screenshots/4-search.png" width="19%" alt="Search results highlighted on the page">
+  <img src="docs/screenshots/5-night.png" width="19%" alt="Night mode">
+  <img src="docs/screenshots/1-recent.png" width="19%" alt="The list of recent files">
+</p>
+
+## Download
+
+Get the APK from the [latest release](https://github.com/KalGeo/quiet-pdf/releases/latest)
+and open it on your phone. The first time, Android asks you to allow your browser or file
+manager to install apps.
+
 ## Features
 
 - Continuous vertical scrolling with pinch and double-tap zoom; pages are re-rendered sharper when you zoom in
@@ -37,14 +51,22 @@ You need a full JDK 17 or newer and the Android SDK (platform 36).
 ./gradlew assembleRelease
 ```
 
-The APK is written to `app/build/outputs/apk/release/`. Until a release key is configured,
-the release build is signed with the local debug key, which is fine for installing on your
-own device.
+The APK is written to `app/build/outputs/apk/release/`. Official releases are signed with a
+key described by a `keystore.properties` file that is not in the repository. Without that
+file your build is signed with your local debug key: fine for your own device, but it
+cannot update a copy installed from a release (uninstall that one first).
 
 ## How it works
 
 Kotlin and Jetpack Compose, rendering with Android's own `PdfRenderer`. There is no
 third-party PDF library, which keeps the APK around 1.2 MB.
+
+## Ελληνικά
+
+Το Quiet PDF Reader είναι ένας μικρός αναγνώστης PDF για Android που απλώς ανοίγει τα PDF
+σου: χωρίς διαφημίσεις, χωρίς παρακολούθηση, χωρίς λογαριασμούς και χωρίς πρόσβαση στο
+internet. Τα μενού της εφαρμογής είναι και στα ελληνικά. Κατέβασε το APK από την
+[τελευταία έκδοση](https://github.com/KalGeo/quiet-pdf/releases/latest).
 
 ## License
 
