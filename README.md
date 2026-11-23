@@ -47,7 +47,7 @@ third-party PDF library, which keeps the APK around 1.2 MB.
 
 ## License
 
-Copyright (C) 2026 KalGeo
+Copyright (C) 2026 Georgios Kakavelakis
 
 This program is free software: you can redistribute it and/or modify it under the terms of
 the GNU General Public License version 3 as published by the Free Software Foundation.
