@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A page with a folded corner and text lines, kept inside the adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,28 H61 L72,39 V80 H36 Z" />
+    <path
+        android:fillColor="#FFCDD2"
+        android:pathData="M61,28 V39 H72 Z" />
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M42,47 H66 V50 H42 Z M42,54 H66 V57 H42 Z M42,61 H66 V64 H42 Z M42,68 H56 V71 H42 Z" />
+</vector>

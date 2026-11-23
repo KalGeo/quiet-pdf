@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="open_pdf">Άνοιγμα PDF</string>
+    <string name="recent">Πρόσφατα</string>
+    <string name="empty_hint">Άνοιξε ένα αρχείο PDF για να ξεκινήσεις</string>
+    <string name="remove">Αφαίρεση από τη λίστα</string>
+    <string name="back">Πίσω</string>
+    <string name="night_mode">Νυχτερινή λειτουργία</string>
+    <string name="go_to_page">Μετάβαση σε σελίδα</string>
+    <string name="page_number_hint">Σελίδα (1–%1$d)</string>
+    <string name="go">Μετάβαση</string>
+    <string name="cancel">Άκυρο</string>
+    <string name="error_open">Δεν ήταν δυνατό το άνοιγμα. Ίσως δεν είναι έγκυρο αρχείο PDF.</string>
+    <string name="error_protected">Το PDF προστατεύεται με κωδικό και δεν μπορεί να ανοίξει.</string>
+    <string name="error_access">Το αρχείο δεν είναι πια διαθέσιμο. Ίσως μετακινήθηκε ή διαγράφηκε.</string>
+    <string name="search">Αναζήτηση</string>
+    <string name="search_hint">Αναζήτηση στο έγγραφο</string>
+    <string name="close_search">Κλείσιμο αναζήτησης</string>
+    <string name="previous">Προηγούμενο</string>
+    <string name="next">Επόμενο</string>
+</resources>
