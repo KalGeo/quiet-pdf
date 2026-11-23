@@ -136,6 +136,18 @@ class ZoomState(val list: LazyListState) {
         return items.lastOrNull { it.offset + padTop <= middle }?.index ?: items.first().index
     }
 
+    /** Where the screen currently starts in the document; null before the first layout. */
+    fun position(): Position? {
+        val index = list.firstVisibleItemIndex
+        val item = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return null
+        return Position(index, (list.firstVisibleItemScrollOffset.toFloat() / item.size).coerceIn(0f, 1f))
+    }
+
+    /** Scrolls back to [position]; [pageHeight] is that page's height in list pixels. */
+    suspend fun restore(position: Position, pageHeight: Float) {
+        list.scrollToItem(position.page, (position.fraction * pageHeight).roundToInt())
+    }
+
     suspend fun jumpTo(page: Int) {
         stop()
         offsetY = 0f

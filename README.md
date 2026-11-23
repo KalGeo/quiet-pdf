@@ -12,7 +12,7 @@ anything anywhere.
 - Text search with highlighted results (Android 15 and newer)
 - Night mode
 - Go to page, by number or with a slider
-- Remembers the page you stopped on in each file
+- Remembers exactly where you stopped in each file, however you open it next time
 - Recent files list
 - Shows up in "Open with" for PDFs in other apps
 - English and Greek interface

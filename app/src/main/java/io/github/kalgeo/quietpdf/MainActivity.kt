@@ -56,7 +56,7 @@ private fun App(vm: ReaderViewModel, onExit: () -> Unit) {
                 nightMode = vm.nightMode,
                 onToggleNightMode = vm::toggleNightMode,
                 onBack = { if (screen.external) onExit() else vm.closeDocument() },
-                onPageChanged = { vm.savePage(screen.uri, it) },
+                onPositionChanged = { vm.savePosition(screen.doc, it) },
             )
         }
 

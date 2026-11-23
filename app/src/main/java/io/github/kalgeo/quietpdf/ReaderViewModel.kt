@@ -23,7 +23,8 @@ sealed interface Screen {
         val doc: PdfDoc,
         val uri: Uri,
         val name: String,
-        val initialPage: Int,
+        /** Where reading stopped last time. */
+        val start: Position,
         /** Opened from another app: Back returns there instead of to our home screen. */
         val external: Boolean,
     ) : Screen
@@ -65,8 +66,9 @@ class ReaderViewModel(app: Application) : AndroidViewModel(app) {
                     store.addRecent(Recent(uri, name)).forEach { release(it.uri) }
                     recents = store.recents()
                 }
-                val page = store.lastPage(uri).coerceIn(0, doc.pageCount - 1)
-                screen = Screen.Reader(doc, uri, name, page, external)
+                val saved = store.position(doc.fileId) ?: Position(store.takeLegacyPage(uri) ?: 0, 0f)
+                val start = saved.copy(page = saved.page.coerceIn(0, doc.pageCount - 1))
+                screen = Screen.Reader(doc, uri, name, start, external)
             } catch (e: PdfOpenException) {
                 screen = Screen.Home
                 error = when (e.reason) {
@@ -84,7 +86,7 @@ class ReaderViewModel(app: Application) : AndroidViewModel(app) {
         screen = Screen.Home
     }
 
-    fun savePage(uri: Uri, page: Int) = store.saveLastPage(uri, page)
+    fun savePosition(doc: PdfDoc, position: Position) = store.savePosition(doc.fileId, position)
 
     fun toggleNightMode() {
         nightMode = !nightMode

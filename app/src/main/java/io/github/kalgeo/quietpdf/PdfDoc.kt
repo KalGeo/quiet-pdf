@@ -9,11 +9,13 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.system.Os
 import android.util.LruCache
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.security.MessageDigest
 import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
@@ -31,6 +33,8 @@ class PdfDoc private constructor(
     private val renderer: PdfRenderer,
     /** Page sizes in PDF points (1/72 inch). */
     val pageSizes: List<IntSize>,
+    /** Identifies this file by its content, so it is recognised however it was opened. */
+    val fileId: String,
 ) {
     val pageCount: Int get() = pageSizes.size
 
@@ -83,6 +87,8 @@ class PdfDoc private constructor(
 
         private const val CACHE_BYTES = 64 * 1024 * 1024
 
+        private const val FINGERPRINT_CHUNK = 16 * 1024
+
         private val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
         suspend fun open(context: Context, uri: Uri): PdfDoc = withContext(dispatcher) {
@@ -107,6 +113,9 @@ class PdfDoc private constructor(
                 pfd = ParcelFileDescriptor.open(copy, ParcelFileDescriptor.MODE_READ_ONLY)
             }
 
+            // Before the renderer takes over the descriptor.
+            val fileId = fingerprint(pfd) ?: "uri:$uri"
+
             val renderer = try {
                 PdfRenderer(pfd)
             } catch (e: SecurityException) {
@@ -122,11 +131,35 @@ class PdfDoc private constructor(
                     renderer.openPage(i).use { IntSize(it.width.coerceAtLeast(1), it.height.coerceAtLeast(1)) }
                 }
                 if (sizes.isEmpty()) throw PdfOpenException(PdfOpenException.Reason.Invalid)
-                PdfDoc(renderer, sizes)
+                PdfDoc(renderer, sizes, fileId)
             } catch (e: Exception) {
                 renderer.close()
                 throw e as? PdfOpenException ?: PdfOpenException(PdfOpenException.Reason.Invalid)
             }
+        }
+
+        /**
+         * A hash of the file's size and its first and last 16 KB. The same file gets the same
+         * id whichever app or URI it is opened through, which a content URI does not guarantee.
+         * Reads at explicit offsets, leaving the descriptor's own position untouched.
+         */
+        private fun fingerprint(pfd: ParcelFileDescriptor): String? = try {
+            val size = pfd.statSize
+            val digest = MessageDigest.getInstance("SHA-256")
+            digest.update(size.toString().toByteArray())
+            val chunk = ByteArray(FINGERPRINT_CHUNK)
+            for (start in setOf(0L, (size - chunk.size).coerceAtLeast(0L))) {
+                var filled = 0
+                while (filled < chunk.size) {
+                    val n = Os.pread(pfd.fileDescriptor, chunk, filled, chunk.size - filled, start + filled)
+                    if (n <= 0) break
+                    filled += n
+                }
+                digest.update(chunk, 0, filled)
+            }
+            digest.digest().take(16).joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            null
         }
     }
 }

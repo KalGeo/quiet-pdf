@@ -81,7 +81,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -109,10 +113,10 @@ fun ReaderScreen(
     nightMode: Boolean,
     onToggleNightMode: () -> Unit,
     onBack: () -> Unit,
-    onPageChanged: (Int) -> Unit,
+    onPositionChanged: (Position) -> Unit,
 ) {
     val doc = reader.doc
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = reader.initialPage)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = reader.start.page)
     val zoom = remember(listState) { ZoomState(listState) }
     val scope = rememberCoroutineScope()
     var showGoTo by rememberSaveable { mutableStateOf(false) }
@@ -125,8 +129,29 @@ fun ReaderScreen(
         zoom.reveal(match.page, r.centerX() * k, r.top * k)
     }
 
-    val pageChanged by rememberUpdatedState(onPageChanged)
-    LaunchedEffect(zoom) { snapshotFlow { currentPage }.collect { pageChanged(it) } }
+    // Where reading stopped is remembered as the exact scroll position, not just a page number.
+    val savePosition by rememberUpdatedState(onPositionChanged)
+    var restored by remember { mutableStateOf(false) }
+    LaunchedEffect(zoom) {
+        // The list opens on the saved page; move to the saved spot inside it as soon as the
+        // page's height on this screen is known.
+        val width = snapshotFlow { zoom.viewport.width }.first { it > 0 }
+        val start = reader.start
+        val size = doc.pageSizes[start.page]
+        if (start.fraction > 0f) zoom.restore(start, width.toFloat() * size.height / size.width)
+        restored = true
+        // While reading, save shortly after each scroll comes to rest.
+        snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+            .collectLatest {
+                delay(400)
+                zoom.position()?.let { savePosition(it) }
+            }
+    }
+    // Save at once when the app goes to the background or the document is closed: there may
+    // be no later chance.
+    val saveNow = { if (restored) zoom.position()?.let { savePosition(it) } }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { saveNow() }
+    DisposableEffect(zoom) { onDispose { saveNow() } }
 
     BackHandler(onBack = onBack)
     BackHandler(enabled = search.active, onBack = search::close)
