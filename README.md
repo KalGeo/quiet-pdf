@@ -5,12 +5,12 @@ A small PDF reader for Android that just opens your PDFs.
 No ads, no tracking, no accounts. The app has no internet permission, so it cannot send
 anything anywhere.
 
-<p>
-  <img src="docs/screenshots/2-reader.png" width="19%" alt="A PDF open, with the title bar showing">
-  <img src="docs/screenshots/3-fullscreen.png" width="19%" alt="Reading in full screen, with no bars">
-  <img src="docs/screenshots/4-search.png" width="19%" alt="Search results highlighted on the page">
-  <img src="docs/screenshots/5-night.png" width="19%" alt="Night mode">
-  <img src="docs/screenshots/1-recent.png" width="19%" alt="The list of recent files">
+<p align="center">
+  <img src="docs/screenshots/framed/2-reader.png" width="19%" alt="A PDF open, with the title bar showing">
+  <img src="docs/screenshots/framed/3-fullscreen.png" width="19%" alt="Reading in full screen, with no bars">
+  <img src="docs/screenshots/framed/4-search.png" width="19%" alt="Search results highlighted on the page">
+  <img src="docs/screenshots/framed/5-night.png" width="19%" alt="Night mode">
+  <img src="docs/screenshots/framed/1-recent.png" width="19%" alt="The list of recent files">
 </p>
 
 ## Download
