@@ -18,4 +18,10 @@
     <string name="close_search">Κλείσιμο αναζήτησης</string>
     <string name="previous">Προηγούμενο</string>
     <string name="next">Επόμενο</string>
+    <string name="about">Σχετικά</string>
+    <string name="about_version">Έκδοση %1$s</string>
+    <string name="about_text">Ένας μικρός αναγνώστης PDF χωρίς διαφημίσεις, χωρίς παρακολούθηση και χωρίς πρόσβαση στο internet. Ελεύθερο λογισμικό με άδεια GPL-3.0.</string>
+    <string name="privacy_policy">Πολιτική απορρήτου</string>
+    <string name="source_code">Πηγαίος κώδικας</string>
+    <string name="close">Κλείσιμο</string>
 </resources>
