@@ -1,0 +1,27 @@
+Quiet PDF Reader opens your PDFs and shows them to you. That is all it does.
+
+There are no ads, no pop-ups, no accounts and no tracking. The app does not even have permission to use the internet, so nothing you read can leave your phone. It is small (around 1 MB) and open source.
+
+<b>Reading</b>
+• Smooth continuous scrolling through every page
+• Pinch or double-tap to zoom; pages are redrawn sharp at any zoom level
+• Full screen: the bars disappear as soon as you start reading, and a tap brings them back
+• Night mode turns pages dark for comfortable reading in the evening
+
+<b>Finding your way</b>
+• Search for any word, with every match highlighted on the page (Android 15 and newer)
+• Jump to any page by number or with a slider
+• Reopens every document exactly where you stopped, however you open it next time
+• A list of your recent files on the start screen
+
+<b>Works with your other apps</b>
+Open a PDF from your file manager, email, messages or downloads and choose Quiet PDF Reader.
+
+<b>Privacy</b>
+The app reads only the files you choose. It collects nothing, shares nothing and needs no permissions. Your recent files and reading positions are stored only on your phone.
+
+<b>Open source</b>
+The source code is public under the GPL-3.0 license:
+https://github.com/KalGeo/quiet-pdf
+
+Not supported: password-protected PDFs, text selection, annotations and forms.
