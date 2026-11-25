@@ -8,7 +8,7 @@ plugins {
 
 // The release key and its passwords are described by keystore.properties in the project root,
 // which is never committed (keys: storeFile, storePassword, keyAlias, keyPassword). Without it,
-// as in a fresh clone, release builds are signed with the local debug key so they still install.
+// as in a fresh clone or on F-Droid's build server, release builds come out unsigned.
 val keystoreProperties = Properties().apply {
     val file = rootProject.file("keystore.properties")
     if (file.exists()) file.inputStream().use { load(it) }
@@ -49,8 +49,14 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
         }
+    }
+
+    // Leave out the dependency list AGP embeds encrypted for Google in the APK signing block:
+    // nobody else can read it, and F-Droid rejects APKs that carry it. The Play bundle keeps it.
+    dependenciesInfo {
+        includeInApk = false
     }
 }
 

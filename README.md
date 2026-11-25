@@ -52,14 +52,13 @@ You need a full JDK 17 or newer and the Android SDK (platform 36).
 ```
 
 The APK is written to `app/build/outputs/apk/release/`. Official releases are signed with a
-key described by a `keystore.properties` file that is not in the repository. Without that
-file your build is signed with your local debug key: fine for your own device, but it
-cannot update a copy installed from a release (uninstall that one first).
+key described by a `keystore.properties` file that is not in the repository; without that
+file the release APK is unsigned. To try the app on your own device, build and install a
+debug version instead:
 
-## How it works
-
-Kotlin and Jetpack Compose, rendering with Android's own `PdfRenderer`. There is no
-third-party PDF library, which keeps the APK around 1.2 MB.
+```sh
+./gradlew installDebug
+```
 
 ## Ελληνικά
 
