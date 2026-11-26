@@ -1,1 +1,1 @@
-Large PDFs open almost at once. New: print button (printers or Save as PDF, through Android's own print dialog). Select and copy text: long-press a word and drag the handles (Android 15+). The app now always uses its own purple.
+Large PDFs open almost at once. New: print button (printers or Save as PDF, through Android's own print dialog). Select and copy text: long-press a word and drag the handles (Android 15+).

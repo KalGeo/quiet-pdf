@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -45,8 +46,6 @@ import kotlin.math.roundToInt
 /** Selected text on one page, with its boxes in PDF points (top-left origin), in reading order. */
 class TextSelection(val page: Int, val text: String, val rects: List<RectF>)
 
-private val SelectionColor = Color(0x556750A4)
-private val HandleColor = Color(0xFF6750A4)
 private val HandleSize = 22.dp
 
 /**
@@ -123,10 +122,11 @@ class SelectionState(private val doc: PdfDoc, private val zoom: ZoomState) {
 @Composable
 fun SelectionHighlight(selection: SelectionState, index: Int, pageSize: IntSize) {
     val current = selection.selection?.takeIf { it.page == index } ?: return
+    val color = MaterialTheme.colorScheme.primary.copy(alpha = 0.33f)
     Canvas(Modifier.fillMaxSize()) {
         val k = size.width / pageSize.width
         for (r in current.rects) {
-            drawRect(SelectionColor, Offset(r.left * k, r.top * k), Size(r.width() * k, r.height() * k))
+            drawRect(color, Offset(r.left * k, r.top * k), Size(r.width() * k, r.height() * k))
         }
     }
 }
@@ -185,7 +185,7 @@ private fun Handle(start: Boolean, at: Offset, lineHeight: Float, selection: Sel
             .offset { IntOffset((if (start) at.x - sizePx else at.x).roundToInt(), at.y.roundToInt()) }
             .size(HandleSize)
             .background(
-                HandleColor,
+                MaterialTheme.colorScheme.primary,
                 if (start) RoundedCornerShape(50, 0, 50, 50) else RoundedCornerShape(0, 50, 50, 50),
             )
             .pointerInput(start) {
