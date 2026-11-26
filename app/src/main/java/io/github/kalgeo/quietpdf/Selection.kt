@@ -51,7 +51,7 @@ private val HandleSize = 22.dp
 
 /**
  * Long press selects a word; two handles stretch the selection; the system's floating toolbar
- * offers Copy and Select all. Works on one page at a time, like the search, on Android 15+.
+ * offers Copy. Works on one page at a time, like the search, on Android 15+.
  */
 @Stable
 class SelectionState(private val doc: PdfDoc, private val zoom: ZoomState) {
@@ -73,12 +73,6 @@ class SelectionState(private val doc: PdfDoc, private val zoom: ZoomState) {
         val found = doc.selectText(page, point, point) ?: return false
         selection = found
         return true
-    }
-
-    fun selectAll(scope: CoroutineScope) {
-        val page = selection?.page ?: return
-        job?.cancel()
-        job = scope.launch { doc.selectPage(page)?.let { selection = it } }
     }
 
     /** Moves one end of the selection to the text under [screen], keeping the other end. */
@@ -138,7 +132,7 @@ fun SelectionHighlight(selection: SelectionState, index: Int, pageSize: IntSize)
 }
 
 /**
- * The two drag handles, and the system's text toolbar (Copy, Select all) above the selection.
+ * The two drag handles, and the system's text toolbar (Copy) above the selection.
  * Drawn over the pages in screen coordinates; it follows scrolling and zooming.
  */
 @Composable
@@ -167,7 +161,6 @@ fun SelectionHandles(selection: SelectionState, scope: CoroutineScope) {
             toolbar.showMenu(
                 rect = rect,
                 onCopyRequested = { selection.copy(context) },
-                onSelectAllRequested = { selection.selectAll(scope) },
             )
         }
     }

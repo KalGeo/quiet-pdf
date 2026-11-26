@@ -92,16 +92,6 @@ class PdfDoc private constructor(
         }
     }
 
-    /** Selects all the text on page [index]. Android 15+ only. */
-    suspend fun selectPage(index: Int): TextSelection? = withContext(dispatcher) {
-        if (closed || Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return@withContext null
-        try {
-            renderer.openPage(index).use { page -> textSelection(index, page.textContents) }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     private fun textSelection(index: Int, contents: List<PdfPageTextContent>): TextSelection? {
         val text = contents.joinToString("\n") { it.text }.trim()
         val rects = contents.flatMap { it.bounds }.filter { it.width() > 0f && it.height() > 0f }
