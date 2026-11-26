@@ -260,8 +260,8 @@ fun ReaderScreen(
             Surface(
                 onClick = { showGoTo = true },
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.85f),
-                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                color = Color(0xFF6750A4),
+                contentColor = Color.White,
             ) {
                 Text(
                     stringResource(R.string.page_indicator, currentPage + 1, doc.pageCount),
