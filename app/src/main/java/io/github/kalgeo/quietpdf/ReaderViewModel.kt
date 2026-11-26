@@ -13,6 +13,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -61,13 +63,20 @@ class ReaderViewModel(app: Application) : AndroidViewModel(app) {
             }
             try {
                 val name = withContext(Dispatchers.IO) { displayName(uri) }
-                val doc = PdfDoc.open(getApplication(), uri) // last suspension point, so a cancelled load leaks nothing
+                // A load can be cancelled (another file opened meanwhile). Let the open finish
+                // regardless, so its document is never dropped unclosed, then close it here.
+                val doc = withContext(NonCancellable) { PdfDoc.open(getApplication(), uri) }
+                if (!isActive) {
+                    doc.close()
+                    return@launch
+                }
                 if (persisted) {
                     store.addRecent(Recent(uri, name)).forEach { release(it.uri) }
                     recents = store.recents()
                 }
                 val saved = store.position(doc.fileId) ?: Position(store.takeLegacyPage(uri) ?: 0, 0f)
                 val start = saved.copy(page = saved.page.coerceIn(0, doc.pageCount - 1))
+                doc.loadSizesFrom(start.page)
                 screen = Screen.Reader(doc, uri, name, start, external)
             } catch (e: PdfOpenException) {
                 screen = Screen.Home

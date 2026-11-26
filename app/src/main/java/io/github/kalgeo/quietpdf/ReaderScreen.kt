@@ -60,6 +60,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -91,12 +92,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.math.sqrt
-
-/** Upper bound for one rendered page bitmap (~48 MB), whatever the zoom. */
-private const val MAX_PAGE_PIXELS = 12_000_000f
 
 /** Night mode: inverts the page, softened so white becomes dark grey rather than pure black. */
 private val NightFilter = ColorFilter.colorMatrix(
@@ -145,7 +141,12 @@ fun ReaderScreen(
         val width = snapshotFlow { zoom.viewport.width }.first { it > 0 }
         val start = reader.start
         val size = doc.loadPageSize(start.page)
-        if (start.fraction > 0f) zoom.restore(start, width.toFloat() * size.height / size.width)
+        if (start.fraction > 0f) {
+            // If the page's real size differs from the estimate it opened with, let the list
+            // lay it out at that size first; otherwise the offset can run past its end.
+            withFrameNanos { }
+            zoom.restore(start, width.toFloat() * size.height / size.width)
+        }
         restored = true
         // While reading, save shortly after each scroll comes to rest.
         snapshotFlow { listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
@@ -201,8 +202,8 @@ fun ReaderScreen(
                         else if (!search.active) barsWanted = !barsWanted
                     },
                     onLongPress = { at ->
-                        if (PdfDoc.canSearch) scope.launch {
-                            if (selection.selectWord(at)) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        if (PdfDoc.canSearch) selection.selectWord(scope, at) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     },
                     onMove = { if (!search.active) barsWanted = false },
@@ -251,7 +252,7 @@ fun ReaderScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { printPdf(context, reader.uri, reader.name) }) {
+                    IconButton(onClick = { printPdf(context, reader.uri, doc.copy, reader.name) }) {
                         Icon(Icons.Outlined.Print, stringResource(R.string.print))
                     }
                     if (PdfDoc.canSearch) {
@@ -351,7 +352,7 @@ private fun PageView(
     LaunchedEffect(index, baseWidth, level) {
         if (baseWidth <= 0) return@LaunchedEffect
         if (level > 1) delay(200) // wait for the pinch to settle before the expensive render
-        doc.render(index, renderWidth(baseWidth * level, pageSize))?.let { bitmap = it.asImageBitmap() }
+        doc.render(index, baseWidth * level)?.let { bitmap = it.asImageBitmap() }
     }
 
     Box(
@@ -372,12 +373,6 @@ private fun PageView(
         MatchHighlights(search, index, pageSize)
         SelectionHighlight(selection, index, pageSize)
     }
-}
-
-private fun renderWidth(wanted: Int, pageSize: IntSize): Int {
-    val aspect = pageSize.height.toFloat() / pageSize.width
-    val maxWidth = sqrt(MAX_PAGE_PIXELS / aspect).toInt()
-    return min(wanted, maxWidth).coerceAtLeast(1)
 }
 
 @Composable
