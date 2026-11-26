@@ -136,6 +136,21 @@ class ZoomState(val list: LazyListState) {
         return items.lastOrNull { it.offset + padTop <= middle }?.index ?: items.first().index
     }
 
+    /** The page under screen point [screen] and that point in the page's list pixels. */
+    fun screenToPage(screen: Offset): Pair<Int, Offset>? {
+        val x = (screen.x - offsetX) / scale
+        val y = (screen.y - offsetY) / scale - padTop
+        val item = list.layoutInfo.visibleItemsInfo.firstOrNull { y >= it.offset && y < it.offset + it.size }
+            ?: return null
+        return item.index to Offset(x, y - item.offset)
+    }
+
+    /** Point ([x], [y]) of page [page] (list pixels) on screen; null when the page is not laid out. */
+    fun pageToScreen(page: Int, x: Float, y: Float): Offset? {
+        val item = list.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page } ?: return null
+        return Offset(x * scale + offsetX, (item.offset + padTop + y) * scale + offsetY)
+    }
+
     /** Where the screen currently starts in the document; null before the first layout. */
     fun position(): Position? {
         val index = list.firstVisibleItemIndex
@@ -209,17 +224,20 @@ class ZoomState(val list: LazyListState) {
 
 /**
  * One-finger pan with fling, two-finger pinch zoom, double tap to zoom in/out.
- * [onTap] is a single tap; [onMove] fires once per gesture when a pan or pinch starts.
+ * [onTap] is a single tap; [onMove] fires once per gesture when a pan or pinch starts;
+ * [onLongPress] gets the pressed point.
  */
 fun Modifier.zoomGestures(
     zoom: ZoomState,
     scope: CoroutineScope,
     onTap: () -> Unit,
     onMove: () -> Unit,
+    onLongPress: (Offset) -> Unit = {},
 ): Modifier = this
     .pointerInput(zoom) {
         detectTapGestures(
             onTap = { onTap() },
+            onLongPress = { onLongPress(it) },
             onDoubleTap = { position ->
                 val target = if (zoom.scale > 1.05f) 1f else DOUBLE_TAP_SCALE
                 zoom.launch(scope) { zoom.animateZoomTo(target, position) }

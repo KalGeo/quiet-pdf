@@ -72,7 +72,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -126,6 +128,8 @@ fun ReaderScreen(
     val currentPage by remember(zoom) { derivedStateOf { zoom.currentPage(doc.pageCount) } }
 
     val search = remember(doc) { SearchState(doc) }
+    val selection = remember(doc, zoom) { SelectionState(doc, zoom) }
+    val haptics = LocalHapticFeedback.current
     val reveal: suspend (SearchMatch) -> Unit = { match ->
         val k = zoom.viewport.width / doc.pageSizes[match.page].width.toFloat()
         val r = match.rects.firstOrNull() ?: RectF()
@@ -158,6 +162,7 @@ fun ReaderScreen(
 
     BackHandler(onBack = onBack)
     BackHandler(enabled = search.active, onBack = search::close)
+    BackHandler(enabled = selection.active, onBack = selection::clear)
 
     // The bars (ours and the system's) are shown when a document opens, go away as soon as the
     // user starts reading, and come back with a tap. Search keeps them up: it lives in the bar.
@@ -191,7 +196,15 @@ fun ReaderScreen(
                 .zoomGestures(
                     zoom = zoom,
                     scope = scope,
-                    onTap = { if (!search.active) barsWanted = !barsWanted },
+                    onTap = {
+                        if (selection.active) selection.clear()
+                        else if (!search.active) barsWanted = !barsWanted
+                    },
+                    onLongPress = { at ->
+                        if (PdfDoc.canSearch) scope.launch {
+                            if (selection.selectWord(at)) haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                    },
                     onMove = { if (!search.active) barsWanted = false },
                 )
         ) {
@@ -213,9 +226,11 @@ fun ReaderScreen(
                         translationY = zoom.offsetY
                     },
             ) {
-                items(doc.pageCount, key = { it }) { index -> PageView(doc, index, zoom, search, nightMode) }
+                items(doc.pageCount, key = { it }) { index -> PageView(doc, index, zoom, search, selection, nightMode) }
             }
         }
+
+        SelectionHandles(selection, scope)
 
         AnimatedVisibility(
             visible = barsVisible,
@@ -312,7 +327,14 @@ private fun ImmersiveMode(enabled: Boolean) {
 }
 
 @Composable
-private fun PageView(doc: PdfDoc, index: Int, zoom: ZoomState, search: SearchState, nightMode: Boolean) {
+private fun PageView(
+    doc: PdfDoc,
+    index: Int,
+    zoom: ZoomState,
+    search: SearchState,
+    selection: SelectionState,
+    nightMode: Boolean,
+) {
     val pageSize = doc.pageSizes[index]
     val baseWidth = zoom.viewport.width
     // Render sharper only while zoomed in and only for pages actually on screen.
@@ -348,6 +370,7 @@ private fun PageView(doc: PdfDoc, index: Int, zoom: ZoomState, search: SearchSta
             )
         }
         MatchHighlights(search, index, pageSize)
+        SelectionHighlight(selection, index, pageSize)
     }
 }
 

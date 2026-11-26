@@ -5,6 +5,9 @@ package io.github.kalgeo.quietpdf
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.Point
+import android.graphics.pdf.content.PdfPageTextContent
+import android.graphics.pdf.models.selection.SelectionBoundary
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.Build
@@ -70,6 +73,39 @@ class PdfDoc private constructor(
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    /**
+     * Selects the text on page [index] from [start] to [stop] (PDF points, top-left origin).
+     * When both are the same point, the word under it is selected. Android 15+ only.
+     */
+    suspend fun selectText(index: Int, start: Point, stop: Point): TextSelection? = withContext(dispatcher) {
+        if (closed || Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return@withContext null
+        try {
+            renderer.openPage(index).use { page ->
+                val selection = page.selectContent(SelectionBoundary(start), SelectionBoundary(stop))
+                    ?: return@use null
+                textSelection(index, selection.selectedTextContents)
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Selects all the text on page [index]. Android 15+ only. */
+    suspend fun selectPage(index: Int): TextSelection? = withContext(dispatcher) {
+        if (closed || Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return@withContext null
+        try {
+            renderer.openPage(index).use { page -> textSelection(index, page.textContents) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun textSelection(index: Int, contents: List<PdfPageTextContent>): TextSelection? {
+        val text = contents.joinToString("\n") { it.text }.trim()
+        val rects = contents.flatMap { it.bounds }.filter { it.width() > 0f && it.height() > 0f }
+        return if (text.isEmpty() || rects.isEmpty()) null else TextSelection(index, text, rects)
     }
 
     /** Closes after any render already queued; later renders return null. */

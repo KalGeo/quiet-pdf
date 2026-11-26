@@ -25,6 +25,7 @@ manager to install apps.
 - Full-screen reading: the bars hide as soon as you scroll and come back with a tap
 - Text search with highlighted results (Android 15 and newer)
 - Night mode
+- Select and copy text: long-press a word, drag the handles (Android 15+)
 - Printing, through Android's own print dialog (printers or Save as PDF)
 - Go to page, by number or with a slider
 - Remembers exactly where you stopped in each file, however you open it next time
@@ -32,7 +33,7 @@ manager to install apps.
 - Shows up in "Open with" for PDFs in other apps
 - English and Greek interface
 
-Not supported: password-protected PDFs, text selection, annotations, form filling.
+Not supported: password-protected PDFs, annotations, form filling.
 
 ## Requirements
 
