@@ -101,20 +101,20 @@ class SelectionState(private val doc: PdfDoc, private val zoom: ZoomState) {
     /** The page under a point on screen and that point in the page's PDF points. */
     private fun toPdf(screen: Offset): Pair<Int, Point>? {
         val (page, inPage) = zoom.screenToPage(screen) ?: return null
-        val k = doc.pageSizes[page].width / zoom.viewport.width.toFloat()
+        val k = doc.pageSize(page).width / zoom.viewport.width.toFloat()
         return page to Point((inPage.x * k).roundToInt(), (inPage.y * k).roundToInt())
     }
 
     /** Screen pixels per PDF point on the selected page at the current zoom. */
     fun pdfToScreen(): Float {
         val page = selection?.page ?: return 1f
-        return zoom.viewport.width / doc.pageSizes[page].width.toFloat() * zoom.scale
+        return zoom.viewport.width / doc.pageSize(page).width.toFloat() * zoom.scale
     }
 
     /** A point of the selected page, in PDF points, on screen; null when that page is off screen. */
     fun toScreen(x: Float, y: Float): Offset? {
         val page = selection?.page ?: return null
-        val k = zoom.viewport.width / doc.pageSizes[page].width.toFloat()
+        val k = zoom.viewport.width / doc.pageSize(page).width.toFloat()
         return zoom.pageToScreen(page, x * k, y * k)
     }
 }

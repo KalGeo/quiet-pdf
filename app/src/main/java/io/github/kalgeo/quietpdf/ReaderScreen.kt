@@ -131,7 +131,7 @@ fun ReaderScreen(
     val selection = remember(doc, zoom) { SelectionState(doc, zoom) }
     val haptics = LocalHapticFeedback.current
     val reveal: suspend (SearchMatch) -> Unit = { match ->
-        val k = zoom.viewport.width / doc.pageSizes[match.page].width.toFloat()
+        val k = zoom.viewport.width / doc.pageSize(match.page).width.toFloat()
         val r = match.rects.firstOrNull() ?: RectF()
         zoom.reveal(match.page, r.centerX() * k, r.top * k)
     }
@@ -144,7 +144,7 @@ fun ReaderScreen(
         // page's height on this screen is known.
         val width = snapshotFlow { zoom.viewport.width }.first { it > 0 }
         val start = reader.start
-        val size = doc.pageSizes[start.page]
+        val size = doc.loadPageSize(start.page)
         if (start.fraction > 0f) zoom.restore(start, width.toFloat() * size.height / size.width)
         restored = true
         // While reading, save shortly after each scroll comes to rest.
@@ -335,7 +335,7 @@ private fun PageView(
     selection: SelectionState,
     nightMode: Boolean,
 ) {
-    val pageSize = doc.pageSizes[index]
+    val pageSize = doc.pageSize(index)
     val baseWidth = zoom.viewport.width
     // Render sharper only while zoomed in and only for pages actually on screen.
     val level by remember(index, zoom) {
