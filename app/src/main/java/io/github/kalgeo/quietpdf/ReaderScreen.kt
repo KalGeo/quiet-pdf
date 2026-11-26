@@ -35,6 +35,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Print
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -71,6 +72,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -116,6 +118,7 @@ fun ReaderScreen(
     onPositionChanged: (Position) -> Unit,
 ) {
     val doc = reader.doc
+    val context = LocalContext.current
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = reader.start.page)
     val zoom = remember(listState) { ZoomState(listState) }
     val scope = rememberCoroutineScope()
@@ -233,6 +236,9 @@ fun ReaderScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { printPdf(context, reader.uri, reader.name) }) {
+                        Icon(Icons.Outlined.Print, stringResource(R.string.print))
+                    }
                     if (PdfDoc.canSearch) {
                         IconButton(onClick = search::open) {
                             Icon(Icons.Filled.Search, stringResource(R.string.search))

@@ -1,0 +1,1 @@
+New: print button (printers or Save as PDF, through Android's own print dialog). The page counter is now purple.
